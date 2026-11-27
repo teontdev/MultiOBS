@@ -1,44 +1,83 @@
 # MultiOBS
 
-App desktop Windows quản lý nhiều instance OBS Studio chạy song song. Mỗi instance là một OBS riêng (profile, scene, stream key riêng), lưu cấu hình trong thư mục bạn chọn. Dùng để stream nhiều kênh/account cùng lúc từ một máy.
+Chạy nhiều OBS Studio song song trên một máy Windows, mỗi OBS một cấu hình riêng (profile, scene, stream key), để stream nhiều kênh/account cùng lúc.
 
-## Cài đặt (người dùng)
+> **🤖 App này được làm hoàn toàn bằng AI.**
+> Toàn bộ code, giao diện, script build, tài liệu và test đều do AI viết (Claude, qua Claude Code).
+> Người làm dự án chỉ đưa yêu cầu, chốt quyết định và thử app. Code đã được AI review và chạy thử trên máy thật,
+> nhưng không có lập trình viên nào viết hay đọc duyệt từng dòng. Dùng thì tự cân nhắc rủi ro; góp ý/issue luôn được hoan nghênh.
 
-1. Cài [OBS Studio](https://obsproject.com/) (mặc định `C:\Program Files\obs-studio`).
-2. Chạy bộ cài `MultiOBS_<phiên bản>_x64-setup.exe` (cài vào Program Files, cần UAC). Đã cài bản cũ thì gỡ bản cũ trước.
-3. Mở MultiOBS. Nếu OBS cài ở chỗ khác, bấm biểu tượng bánh răng để chọn thư mục cài OBS.
+> **Không chính thức.** MultiOBS là công cụ độc lập, không liên quan và không được OBS Project bảo trợ.
+> "OBS" và "OBS Studio" là nhãn hiệu của OBS Project.
 
-MultiOBS (bản cài) chạy với **quyền admin**: Windows hỏi UAC một lần khi mở app, và mọi OBS mở từ app cũng chạy admin (game capture bắt được game chạy admin, OBS được ưu tiên GPU). Bản dev (`start.bat`) chạy không admin.
+**English:** MultiOBS is a Windows desktop app to create, run and manage multiple isolated OBS Studio instances side by side (one per streaming account). It was built entirely by AI (Claude via Claude Code); the human only provided requirements and decisions. Unofficial, not affiliated with the OBS Project.
+
+## Tính năng
+
+- **Tạo / đổi tên / xoá instance OBS**, mỗi instance lưu cấu hình trong thư mục do bạn chọn.
+- **Thư mục lưu mặc định**: đặt một lần trong Cài đặt, khi thêm instance chỉ cần gõ tên.
+- **Mở / Dừng** từng OBS, xem instance nào đang chạy; nhiều OBS chạy cùng lúc (`--multi`).
+- **OBS chạy với quyền admin** (game capture bắt được game chạy admin, OBS được ưu tiên GPU).
+- **Xoá an toàn**: không bao giờ đụng tới bản cài OBS hay thư mục không do app tạo.
+- Không chép OBS: mọi instance dùng chung bản cài OBS, cập nhật OBS là tất cả cùng lên đời.
+
+## Yêu cầu
+
+- Windows 10/11 64-bit (đã thử trên Windows 11).
+- [OBS Studio](https://obsproject.com/) đã cài (đã thử với OBS 33.0.1).
+- Tài khoản Windows có quyền admin (app hỏi UAC khi mở).
+
+## Cài đặt
+
+1. Cài OBS Studio (mặc định `C:\Program Files\obs-studio`).
+2. Tải bộ cài `MultiOBS_<phiên bản>_x64-setup.exe` ở mục **Releases** của repo, hoặc tự build (xem [Phát triển](#phát-triển)).
+3. Chạy bộ cài. App cài vào Program Files nên cần UAC. Đã cài bản cũ thì gỡ bản cũ trước.
+4. Mở MultiOBS. Nếu OBS cài ở chỗ khác, bấm biểu tượng bánh răng để chọn thư mục cài OBS.
+
+Windows SmartScreen có thể cảnh báo vì bộ cài chưa được ký số. Bấm "More info" → "Run anyway" nếu bạn tin nguồn tải.
 
 ## Sử dụng
 
 - **Thêm instance**: nhập tên và chọn thư mục lưu. Thư mục phải trống (hoặc chưa tồn tại); không dùng gốc ổ đĩa, thư mục cài OBS, hay thư mục lồng với instance khác.
-- **Thư mục lưu mặc định** (bánh răng → Cài đặt): đặt một thư mục cha, khi thêm instance ô "Thư mục lưu" tự điền `<thư mục mặc định>\<tên instance>` (ký tự Windows cấm trong tên được thay bằng `-`). Vẫn bấm "Chọn thư mục" để đặt chỗ khác.
-- **Mở / Dừng**: chạy hoặc đóng OBS của instance. "Dừng" gửi lệnh đóng bình thường, nên nếu OBS đang mở hộp thoại (ví dụ trình hướng dẫn lần đầu) thì phải đóng hộp thoại đó trước; nếu đang stream/ghi hình, OBS sẽ hỏi xác nhận thoát.
+- **Thư mục lưu mặc định** (bánh răng → Cài đặt): đặt một thư mục cha; khi thêm instance, ô "Thư mục lưu" tự điền `<thư mục mặc định>\<tên instance>` (ký tự Windows cấm trong tên được thay bằng `-`). Vẫn bấm "Chọn thư mục" để đặt chỗ khác.
+- **Mở / Dừng**: chạy hoặc đóng OBS của instance. "Dừng" gửi lệnh đóng bình thường (không ép tắt), nên:
+  - nếu OBS đang mở hộp thoại (ví dụ trình hướng dẫn lần đầu), đóng hộp thoại đó trước;
+  - nếu đang stream/ghi hình, OBS sẽ hỏi xác nhận thoát.
 - **⋯ → Đổi tên / Mở thư mục / Xoá**.
-- **Xoá** (chỉ bấm được khi OBS của instance đã dừng): mặc định chỉ gỡ khỏi danh sách, thư mục dữ liệu giữ nguyên. Thư mục giữ lại không thêm lại được làm instance mới (vẫn còn file `.multiobs` và `config`); muốn dùng lại cấu hình cũ, chép thư mục `config` sang instance mới khi OBS của nó đang dừng. Tick "Xoá cả thư mục dữ liệu" để xoá luôn (không khôi phục được). App chỉ xoá thư mục có file đánh dấu `.multiobs` mang đúng id của instance, và không bao giờ xoá bản cài OBS.
+- **Xoá** (chỉ bấm được khi OBS của instance đã dừng):
+  - Mặc định chỉ gỡ khỏi danh sách, thư mục dữ liệu giữ nguyên. Thư mục giữ lại không thêm lại được làm instance mới; muốn dùng lại cấu hình cũ, chép thư mục `config` sang instance mới khi OBS của nó đang dừng.
+  - Tick "Xoá cả thư mục dữ liệu" để xoá luôn (không khôi phục được). App chỉ xoá thư mục có file đánh dấu `.multiobs` mang đúng id của instance.
 
-## Cơ chế
+## Cách hoạt động
 
-OBS không cho đổi chỗ lưu cấu hình qua biến môi trường. MultiOBS dùng **chế độ portable** của OBS:
+OBS không cho đổi chỗ lưu cấu hình qua biến môi trường (`APPDATA`), nên MultiOBS dùng **chế độ portable** của OBS:
 
 - Trong thư mục instance, app tạo **junction** (lối tắt thư mục cấp NTFS) tới từng thư mục con của bản cài OBS (`bin`, `data`, `obs-plugins`...). Không chép file, không tốn dung lượng.
 - OBS được mở bằng `bin\64bit\obs64.exe --multi --portable` từ thư mục instance, nên cấu hình ghi vào `<thư mục instance>\config\obs-studio`.
-- Cập nhật OBS xong, các instance dùng luôn bản mới; nếu thiếu thư mục mới, app tự tạo junction lúc mở.
+- Mỗi lần Mở, app tạo lại junction theo thư mục cài OBS hiện tại, nên đổi/cập nhật OBS không cần làm gì thêm.
+- Bản cài của MultiOBS chạy admin (manifest `requireAdministrator`), OBS mở từ app thừa hưởng quyền đó. App và OBS cùng mức quyền thì nút Dừng mới đóng được OBS.
 
-Lưu ý: đừng xoá thư mục instance bằng tay khi chưa gỡ junction trong đó. Hãy xoá qua app.
+**Đừng xoá thư mục instance bằng tay** khi trong đó còn junction: một số công cụ xoá sẽ đi theo junction vào bản cài OBS. Hãy xoá qua app.
 
 Danh sách instance lưu ở `%APPDATA%\com.multiobs.app\instances.json`.
 
 ## Phát triển
 
-Yêu cầu: Node.js LTS (đã build với v24), Rust (stable, MSVC), WebView2 (có sẵn trên Windows 11).
+Stack: [Tauri 2](https://tauri.app/) (Rust) + React 19 + TypeScript + Tailwind CSS v4, bộ cài NSIS.
+
+Yêu cầu: Node.js LTS (đã build với v24), Rust stable (MSVC toolchain), WebView2 (có sẵn trên Windows 11).
 
 | Script | Việc làm |
 |---|---|
-| `start.bat` | Cài thư viện nếu thiếu, chạy app chế độ dev (hot reload). |
+| `start.bat` | Cài thư viện nếu thiếu, chạy app chế độ dev (hot reload). Bản dev chạy **không** admin. |
 | `build.bat` | Build bản production và bộ cài NSIS tại `src-tauri\target\release\bundle\nsis\`. |
 
 Test backend: `cd src-tauri && cargo test`.
 
-Tài liệu thiết kế: `specs/001-multiobs-instance-manager.md`.
+Cấu trúc:
+
+- `src-tauri/src/obs.rs`: lưu danh sách instance, tạo/gỡ junction, mở/dừng OBS, kiểm tra thư mục và xoá an toàn.
+- `src-tauri/src/lib.rs`: các lệnh Tauri mà giao diện gọi.
+- `src/`: giao diện React.
+- `specs/`, `tasks/`: đặc tả và danh sách việc mà AI đã lập trước khi code.
+- `docs/agent-memory/`: các quyết định và bài học AI ghi lại trong quá trình làm.
