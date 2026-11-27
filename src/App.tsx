@@ -2,6 +2,7 @@ import { Copy, FolderOpen, MonitorPlay, MoreHorizontal, Pencil, Play, Plus, Sett
 import { useCallback, useEffect, useRef, useState } from "react";
 import logo from "../src-tauri/icons/logo.svg";
 import { api, errorText, type AppState, type Instance } from "./api";
+import { useT } from "./i18n";
 import { CreateDialog, DeleteDialog, RenameDialog, SettingsDialog } from "./components/Dialogs";
 import { ToastRegion, useToasts } from "./components/Toasts";
 import { Button, IconButton, cn, usePresence } from "./components/ui";
@@ -16,6 +17,7 @@ export default function App() {
   const [duplicating, setDuplicating] = useState<Instance | null>(null);
   const [renaming, setRenaming] = useState<Instance | null>(null);
   const [deleting, setDeleting] = useState<Instance | null>(null);
+  const { t, lang, setLang } = useT();
   const { toasts, push, dismiss } = useToasts();
 
   const seq = useRef(0);
@@ -28,16 +30,16 @@ export default function App() {
       if (mine === seq.current) setState(s); // bỏ kết quả poll cũ về muộn
     } catch (e) {
       // Poll 2s/lần: chỉ báo lần lỗi đầu, không đè toast lỗi của thao tác khác.
-      if (!failed.current) push({ kind: "error", title: "Không đọc được danh sách instance", detail: errorText(e) });
+      if (!failed.current) push({ kind: "error", title: t.loadFailed, detail: errorText(e) ?? t.unknownError });
       failed.current = true;
     }
-  }, [push]);
+  }, [push, t]);
 
   // OBS có thể bị đóng ngoài app, nên làm mới trạng thái chạy định kỳ.
   useEffect(() => {
     reload();
-    const t = setInterval(reload, POLL_MS);
-    return () => clearInterval(t);
+    const timer = setInterval(reload, POLL_MS);
+    return () => clearInterval(timer);
   }, [reload]);
 
   const done = (message: string) => {
@@ -57,7 +59,7 @@ export default function App() {
       if (okTitle) push({ kind: "success", title: okTitle });
       await reload();
     } catch (e) {
-      push({ kind: "error", title: failTitle, detail: errorText(e) });
+      push({ kind: "error", title: failTitle, detail: errorText(e) ?? t.unknownError });
     } finally {
       setBusyIds((b) => {
         const next = new Set(b);
@@ -73,12 +75,15 @@ export default function App() {
     <div className="flex h-screen flex-col bg-background text-foreground">
       <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border bg-surface px-6">
         <img src={logo} alt="" className="size-8" />
-        <h1 className="text-base font-semibold">Instance OBS</h1>
+        <h1 className="text-base font-semibold">{t.appTitle}</h1>
         <div className="ml-auto flex items-center gap-2">
-          <IconButton icon={Settings} label="Cài đặt" onClick={() => setSettingsOpen(true)} />
+          <Button variant="ghost" lang={lang === "vi" ? "en" : "vi"} aria-label={t.switchLang} title={t.switchLang} onClick={() => setLang(lang === "vi" ? "en" : "vi")} className="w-12">
+            {t.langButton}
+          </Button>
+          <IconButton icon={Settings} label={t.settings} onClick={() => setSettingsOpen(true)} />
           {instances.length > 0 ? (
             <Button variant="primary" icon={Plus} onClick={() => setCreating(true)} disabled={!state?.obs_ok}>
-              Thêm instance
+              {t.addInstance}
             </Button>
           ) : null}
         </div>
@@ -90,10 +95,10 @@ export default function App() {
             <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
               <TriangleAlert className="size-5 shrink-0 text-amber-700" aria-hidden />
               <p className="min-w-0 flex-1 text-sm text-pretty text-amber-700">
-                Chưa tìm thấy OBS Studio. Chọn thư mục cài OBS để tạo và mở instance.
+                {t.obsMissing}
               </p>
               <Button onClick={() => setSettingsOpen(true)} className="shrink-0">
-                Chọn thư mục OBS
+                {t.pickObsDir}
               </Button>
             </div>
           ) : null}
@@ -110,11 +115,11 @@ export default function App() {
                   inst={inst}
                   busy={busyIds.has(inst.id)}
                   canLaunch={!!state.obs_ok}
-                  onLaunch={() => act(inst, () => api.launchInstance(inst.id), `Không mở được "${inst.name}"`)}
-                  onStop={() => act(inst, () => api.stopInstance(inst.id), `Không dừng được "${inst.name}"`, "Đã gửi lệnh đóng. Nếu OBS đang mở hộp thoại, đóng hộp thoại đó trước")}
+                  onLaunch={() => act(inst, () => api.launchInstance(inst.id), t.launchFailed(inst.name))}
+                  onStop={() => act(inst, () => api.stopInstance(inst.id), t.stopFailed(inst.name), t.stopSent)}
                   onRename={() => setRenaming(inst)}
                   onDuplicate={() => setDuplicating(inst)}
-                  onOpenDir={() => api.openDir(inst.id).catch((e) => push({ kind: "error", title: "Không mở được thư mục", detail: errorText(e) }))}
+                  onOpenDir={() => api.openDir(inst.id).catch((e) => push({ kind: "error", title: t.openFolderFailed, detail: errorText(e) ?? t.unknownError }))}
                   onDelete={() => setDeleting(inst)}
                 />
               ))}
@@ -155,6 +160,7 @@ function InstanceRow(props: {
   onDelete: () => void;
 }) {
   const { inst, busy } = props;
+  const { t } = useT();
   return (
     <li className="flex items-center gap-4 px-5 py-4">
       <div className="min-w-0 flex-1">
@@ -165,7 +171,7 @@ function InstanceRow(props: {
           {inst.running ? (
             <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
               <span className="size-1.5 rounded-full bg-emerald-500" aria-hidden />
-              Đang chạy
+              {t.running}
             </span>
           ) : null}
         </div>
@@ -175,20 +181,20 @@ function InstanceRow(props: {
       </div>
       {inst.running ? (
         <Button variant="danger" icon={Square} isLoading={busy} onClick={props.onStop} className="shrink-0">
-          Dừng
+          {t.stop}
         </Button>
       ) : (
         <Button icon={Play} isLoading={busy} disabled={!props.canLaunch} onClick={props.onLaunch} className="shrink-0">
-          Mở
+          {t.open}
         </Button>
       )}
       <RowMenu
-        label={`Thao tác cho ${inst.name}`}
+        label={t.rowActions(inst.name)}
         items={[
-          { label: "Đổi tên", icon: Pencil, onSelect: props.onRename },
-          { label: "Nhân bản", icon: Copy, onSelect: props.onDuplicate, disabled: inst.running || !props.canLaunch, hint: inst.running ? "Dừng OBS trước khi nhân bản" : undefined },
-          { label: "Mở thư mục", icon: FolderOpen, onSelect: props.onOpenDir },
-          { label: "Xoá", icon: Trash2, onSelect: props.onDelete, danger: true, disabled: inst.running, hint: inst.running ? "Dừng OBS trước khi xoá" : undefined },
+          { label: t.rename, icon: Pencil, onSelect: props.onRename },
+          { label: t.duplicate, icon: Copy, onSelect: props.onDuplicate, disabled: inst.running || !props.canLaunch, hint: inst.running ? t.stopBeforeDuplicate : undefined },
+          { label: t.openFolder, icon: FolderOpen, onSelect: props.onOpenDir },
+          { label: t.delete, icon: Trash2, onSelect: props.onDelete, danger: true, disabled: inst.running, hint: inst.running ? t.stopBeforeDelete : undefined },
         ]}
       />
     </li>
@@ -255,17 +261,18 @@ function RowMenu({ label, items }: { label: string; items: MenuItem[] }) {
 }
 
 function EmptyState({ onCreate, disabled }: { onCreate: () => void; disabled: boolean }) {
+  const { t } = useT();
   return (
     <div className="flex flex-col items-center rounded-xl border border-border bg-surface px-6 py-16 text-center">
       <div className="flex size-12 items-center justify-center rounded-xl bg-background">
         <MonitorPlay className="size-6 text-muted" aria-hidden />
       </div>
-      <p className="mt-4 text-base font-semibold">Chưa có instance nào</p>
+      <p className="mt-4 text-base font-semibold">{t.emptyTitle}</p>
       <p className="mt-1 max-w-[46ch] text-sm text-pretty text-muted">
-        Mỗi instance là một OBS riêng cho một account, chạy song song với các instance khác.
+        {t.emptyBody}
       </p>
       <Button variant="primary" icon={Plus} onClick={onCreate} disabled={disabled} className="mt-6">
-        Thêm instance
+        {t.addInstance}
       </Button>
     </div>
   );

@@ -1,6 +1,7 @@
 // Toast theo overlay.md: đáy phải, xong việc tự tắt 4s không nút đóng; lỗi có nút đóng, không tự tắt.
 import { CircleAlert, CircleCheck, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useT } from "../i18n";
 import { cn } from "./ui";
 
 export type Toast = { id: number; kind: "success" | "error"; title: string; detail?: string };
@@ -27,6 +28,7 @@ export function useToasts() {
 }
 
 function ToastItem({ toast, onDismiss }: { toast: Toast & { leaving?: boolean }; onDismiss: () => void }) {
+  const { t } = useT();
   const [entered, setEntered] = useState(false);
   useEffect(() => {
     const raf = requestAnimationFrame(() => requestAnimationFrame(() => setEntered(true)));
@@ -52,7 +54,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast & { leaving?: boolean };
       {isError ? (
         <button
           type="button"
-          aria-label="Đóng thông báo"
+          aria-label={t.closeToast}
           onClick={onDismiss}
           className="inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-muted outline-hidden hover:bg-item-hover hover:text-foreground"
         >

@@ -1,5 +1,6 @@
 // Primitives theo skill ui-ux: button.md (I1, I4), input.md (I13), overlay.md (modal, chuyển động).
 import { LoaderCircle, X, type LucideIcon } from "lucide-react";
+import { useT } from "../i18n";
 import {
   useEffect,
   useId,
@@ -154,6 +155,7 @@ export function Modal({
   /** Đang chạy lệnh: chặn Esc/✕ để lỗi không bị mất khi dialog đã đóng. */
   busy?: boolean;
 }) {
+  const { t } = useT();
   const { mounted, shown } = usePresence(open);
   const titleId = useId();
   useEffect(() => {
@@ -191,7 +193,7 @@ export function Modal({
         {!hideClose ? (
           <button
             type="button"
-            aria-label="Đóng"
+            aria-label={t.close}
             disabled={busy}
             onClick={onClose}
             className="absolute top-5 right-5 inline-flex size-8 cursor-pointer items-center justify-center rounded-lg text-muted outline-hidden hover:bg-foreground/5 disabled:cursor-not-allowed disabled:opacity-50 hover:text-foreground"

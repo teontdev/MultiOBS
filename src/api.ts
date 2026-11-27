@@ -26,11 +26,13 @@ export const api = {
   renameInstance: (id: string, name: string) => invoke<void>("rename_instance", { id, name }),
   deleteInstance: (id: string, deleteFiles: boolean) =>
     invoke<void>("delete_instance", { id, deleteFiles }),
+  setLanguage: (en: boolean) => invoke<void>("set_language", { en }),
   launchInstance: (id: string) => invoke<void>("launch_instance", { id }),
   stopInstance: (id: string) => invoke<void>("stop_instance", { id }),
   openDir: (id: string) => invoke<void>("open_dir", { id }),
 };
 
-export function errorText(e: unknown): string {
-  return typeof e === "string" ? e : e instanceof Error ? e.message : "Có lỗi không xác định";
+/** undefined = lỗi không rõ; nơi gọi tự dùng chuỗi "lỗi không xác định" theo ngôn ngữ. */
+export function errorText(e: unknown): string | undefined {
+  return typeof e === "string" ? e : e instanceof Error ? e.message : undefined;
 }
