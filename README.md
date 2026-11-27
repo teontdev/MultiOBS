@@ -5,8 +5,10 @@ App desktop Windows quản lý nhiều instance OBS Studio chạy song song. M�
 ## Cài đặt (người dùng)
 
 1. Cài [OBS Studio](https://obsproject.com/) (mặc định `C:\Program Files\obs-studio`).
-2. Chạy bộ cài `MultiOBS_<phiên bản>_x64-setup.exe`.
+2. Chạy bộ cài `MultiOBS_<phiên bản>_x64-setup.exe` (cài vào Program Files, cần UAC). Đã cài bản cũ thì gỡ bản cũ trước.
 3. Mở MultiOBS. Nếu OBS cài ở chỗ khác, bấm biểu tượng bánh răng để chọn thư mục cài OBS.
+
+MultiOBS (bản cài) chạy với **quyền admin**: Windows hỏi UAC một lần khi mở app, và mọi OBS mở từ app cũng chạy admin (game capture bắt được game chạy admin, OBS được ưu tiên GPU). Bản dev (`start.bat`) chạy không admin.
 
 ## Sử dụng
 

@@ -37,6 +37,7 @@
     ],
     "windows": {
       "nsis": {
+        "installMode": "perMachine",
         "languages": [
           "Vietnamese",
           "English"
