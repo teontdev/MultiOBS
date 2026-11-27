@@ -1,5 +1,6 @@
 import { FolderOpen, MonitorPlay, MoreHorizontal, Pencil, Play, Plus, Settings, Square, Trash2, TriangleAlert } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import logo from "../src-tauri/icons/logo.svg";
 import { api, errorText, type AppState, type Instance } from "./api";
 import { CreateDialog, DeleteDialog, RenameDialog, SettingsDialog } from "./components/Dialogs";
 import { ToastRegion, useToasts } from "./components/Toasts";
@@ -69,6 +70,7 @@ export default function App() {
   return (
     <div className="flex h-screen flex-col bg-background text-foreground">
       <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border bg-surface px-6">
+        <img src={logo} alt="" className="size-8" />
         <h1 className="text-base font-semibold">Instance OBS</h1>
         <div className="ml-auto flex items-center gap-2">
           <IconButton icon={Settings} label="Cài đặt" onClick={() => setSettingsOpen(true)} />

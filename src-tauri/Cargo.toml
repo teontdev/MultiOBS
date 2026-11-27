@@ -2,7 +2,9 @@
 name = "multiobs"
 version = "0.1.0"
 description = "Quan ly nhieu instance OBS"
-authors = []
+authors = ["teontdev"]
+license = "PolyForm-Noncommercial-1.0.0"
+repository = "https://github.com/teontdev/MultiOBS"
 edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

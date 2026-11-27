@@ -1,3 +1,5 @@
+<p align="center"><img src="src-tauri/icons/logo.svg" width="128" alt="MultiOBS logo"></p>
+
 # MultiOBS
 
 Chạy nhiều OBS Studio song song trên một máy Windows, mỗi OBS một cấu hình riêng (profile, scene, stream key), để stream nhiều kênh/account cùng lúc.
@@ -30,7 +32,7 @@ Chạy nhiều OBS Studio song song trên một máy Windows, mỗi OBS một c�
 ## Cài đặt
 
 1. Cài OBS Studio (mặc định `C:\Program Files\obs-studio`).
-2. Tải bộ cài `MultiOBS_<phiên bản>_x64-setup.exe` ở mục **Releases** của repo, hoặc tự build (xem [Phát triển](#phát-triển)).
+2. Tải bộ cài `MultiOBS_<phiên bản>_x64-setup.exe` ở mục [Releases](https://github.com/teontdev/MultiOBS/releases), hoặc tự build (xem [Phát triển](#phát-triển)).
 3. Chạy bộ cài. App cài vào Program Files nên cần UAC. Đã cài bản cũ thì gỡ bản cũ trước.
 4. Mở MultiOBS. Nếu OBS cài ở chỗ khác, bấm biểu tượng bánh răng để chọn thư mục cài OBS.
 
@@ -81,3 +83,9 @@ Cấu trúc:
 - `src/`: giao diện React.
 - `specs/`, `tasks/`: đặc tả và danh sách việc mà AI đã lập trước khi code.
 - `docs/agent-memory/`: các quyết định và bài học AI ghi lại trong quá trình làm.
+
+## Giấy phép
+
+[PolyForm Noncommercial 1.0.0](LICENSE): được dùng, sửa, chia sẻ miễn phí cho **mục đích cá nhân, phi thương mại** (học tập, sở thích, tổ chức phi lợi nhuận). **Cấm dùng cho mục đích thương mại** (bán, đóng gói vào sản phẩm/dịch vụ trả phí, dùng trong công ty để kiếm lợi). Muốn dùng thương mại, liên hệ tác giả qua [Issues](https://github.com/teontdev/MultiOBS/issues).
+
+Đây là giấy phép "source-available", không phải giấy phép open source theo định nghĩa OSI.
