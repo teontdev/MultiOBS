@@ -1,6 +1,6 @@
 mod obs;
 
-use obs::{err, Instance, Store};
+use obs::{err, tr, Instance, Store};
 use serde::Serialize;
 use std::path::PathBuf;
 use std::sync::Mutex;
@@ -99,15 +99,18 @@ async fn save_settings(
 ) -> Res<()> {
     if let Some(root) = &obs_root {
         if !obs::obs_exe(root).is_file() {
-            return Err("Không thấy bin\\64bit\\obs64.exe trong thư mục cài OBS đã chọn".into());
+            return Err(tr(
+                "Không thấy bin\\64bit\\obs64.exe trong thư mục cài OBS đã chọn",
+                "bin\\64bit\\obs64.exe was not found in the selected OBS folder",
+            ));
         }
     }
     if let Some(dir) = &default_dir {
         if !dir.is_absolute() || !dir.is_dir() {
-            return Err("Thư mục lưu mặc định không tồn tại".into());
+            return Err(tr("Thư mục lưu mặc định không tồn tại", "The default folder does not exist"));
         }
         if obs::in_sync_folder(dir, &obs::sync_roots()) {
-            return Err(obs::ONEDRIVE_ERR.into());
+            return Err(obs::onedrive_err());
         }
     }
     let mut store = state.store.lock().unwrap();
@@ -130,14 +133,14 @@ fn add_instance(state: &AppState, name: &str, dir: PathBuf, source_id: Option<&s
         Some(id) => {
             let src = &store.instances[store.find(id)?];
             if state.is_running(src) {
-                return Err("Dừng OBS của instance nguồn trước khi nhân bản".into());
+                return Err(tr("Dừng OBS của instance nguồn trước khi nhân bản", "Stop the source instance's OBS before duplicating"));
             }
             Some(src.dir.clone())
         }
         None => None,
     };
     let name = store.validate_name(name, None)?;
-    let root = store.obs_root.clone().ok_or("Chưa chọn thư mục cài OBS")?;
+    let root = store.obs_root.clone().ok_or_else(|| tr("Chưa chọn thư mục cài OBS", "The OBS install folder is not set"))?;
     obs::check_location(&dir, &root, store.instances.iter().map(|i| i.dir.as_path()))?;
     let existed = obs::prepare_dir(&dir)?;
     let id = uuid::Uuid::new_v4().to_string();
@@ -151,6 +154,11 @@ fn add_instance(state: &AppState, name: &str, dir: PathBuf, source_id: Option<&s
     let created_at = SystemTime::now().duration_since(UNIX_EPOCH).map_err(err)?.as_secs();
     store.instances.push(Instance { id, name, dir, created_at, pid: None });
     state.save(&store)
+}
+
+#[tauri::command]
+fn set_language(en: bool) {
+    obs::set_en(en);
 }
 
 #[tauri::command]
@@ -178,7 +186,7 @@ async fn delete_instance(state: State<'_, AppState>, id: String, delete_files: b
     let mut store = state.store.lock().unwrap();
     let idx = store.find(&id)?;
     if state.is_running(&store.instances[idx]) {
-        return Err("Dừng OBS của instance này trước khi xoá".into());
+        return Err(tr("Dừng OBS của instance này trước khi xoá", "Stop this instance's OBS before deleting"));
     }
     let dir = store.instances[idx].dir.clone();
     if delete_files {
@@ -196,16 +204,17 @@ async fn launch_instance(state: State<'_, AppState>, id: String) -> Res<()> {
     let mut store = state.store.lock().unwrap();
     let idx = store.find(&id)?;
     if state.is_running(&store.instances[idx]) {
-        return Err("OBS của instance này đang chạy".into());
+        return Err(tr("OBS của instance này đang chạy", "This instance's OBS is already running"));
     }
     let root = store
         .obs_root
         .clone()
         .filter(|r| obs::obs_exe(r).is_file())
-        .ok_or("Chưa chọn thư mục cài OBS hợp lệ (mở Cài đặt)")?;
+        .ok_or_else(|| tr("Chưa chọn thư mục cài OBS hợp lệ (mở Cài đặt)", "No valid OBS install folder (open Settings)"))?;
     let dir = store.instances[idx].dir.clone();
     if !dir.is_dir() {
-        return Err(format!("Không thấy thư mục {}", dir.display()));
+        let d = dir.display();
+        return Err(tr(&format!("Không thấy thư mục {d}"), &format!("Folder not found: {d}")));
     }
     // Relink from scratch: junctions may still point at an old OBS root after Settings changed it.
     obs::unlink_obs(&dir)?;
@@ -249,6 +258,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             get_state,
+            set_language,
             save_settings,
             create_instance,
             duplicate_instance,

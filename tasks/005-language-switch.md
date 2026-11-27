@@ -12,7 +12,7 @@ Memory áp dụng: none
   - Verification:
     - `tsc --noEmit`.
     - `grep` các ký tự có dấu tiếng Việt trong `src/` (trừ `i18n.tsx` và comment): không còn chuỗi hiển thị nào.
-- [ ] **T2. Lỗi backend song ngữ**
+- [x] **T2. Lỗi backend song ngữ**
   - `obs.rs`: thêm `static EN: AtomicBool`, `pub fn set_en`, `pub fn tr`. Bọc mọi chuỗi lỗi bằng `tr`.
   - `lib.rs`: thêm command `set_language(en: bool)` và bọc mọi chuỗi lỗi bằng `tr`.
   - Thêm unit test cho `tr`.

@@ -6,13 +6,31 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
 
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 const MARKER: &str = ".multiobs";
-pub const ONEDRIVE_ERR: &str = "Không đặt instance trong OneDrive: OneDrive khoá liên kết (lỗi Access is denied) và đồng bộ cấu hình OBS liên tục. Chọn thư mục ngoài OneDrive, ví dụ D:\\OBS";
+/// UI language for error messages (spec 005), set by the frontend via `set_language`.
+static EN: AtomicBool = AtomicBool::new(false);
+
+pub fn set_en(en: bool) {
+    EN.store(en, Ordering::Relaxed);
+}
+
+/// Pick the message for the current UI language.
+pub fn tr(vi: &str, en: &str) -> String {
+    if EN.load(Ordering::Relaxed) { en } else { vi }.to_string()
+}
+
+pub fn onedrive_err() -> String {
+    tr(
+        "Không đặt instance trong OneDrive: OneDrive khoá liên kết (lỗi Access is denied) và đồng bộ cấu hình OBS liên tục. Chọn thư mục ngoài OneDrive, ví dụ D:\\OBS",
+        "Instances cannot be placed in OneDrive: OneDrive locks the app's links (Access is denied) and keeps syncing OBS settings. Choose a folder outside OneDrive, e.g. D:\\OBS",
+    )
+}
 const DEFAULT_OBS_ROOT: &str = r"C:\Program Files\obs-studio";
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -65,19 +83,19 @@ impl Store {
         self.instances
             .iter()
             .position(|i| i.id == id)
-            .ok_or_else(|| "Không tìm thấy instance".to_string())
+            .ok_or_else(|| tr("Không tìm thấy instance", "Instance not found"))
     }
 
     pub fn validate_name(&self, name: &str, except_id: Option<&str>) -> Result<String, String> {
         let name = name.trim();
         if name.is_empty() {
-            return Err("Nhập tên instance".into());
+            return Err(tr("Nhập tên instance", "Enter an instance name"));
         }
         let taken = self.instances.iter().any(|i| {
             Some(i.id.as_str()) != except_id && i.name.to_lowercase() == name.to_lowercase()
         });
         if taken {
-            return Err(format!("Đã có instance tên \"{name}\""));
+            return Err(tr(&format!("Đã có instance tên \"{name}\""), &format!("An instance named \"{name}\" already exists")));
         }
         Ok(name.to_string())
     }
@@ -104,17 +122,17 @@ fn overlaps(a: &Path, b: &Path) -> bool {
 /// instance — deleting one of those with "delete files" would wipe unrelated data.
 pub fn check_location<'a>(dir: &Path, obs_root: &Path, others: impl Iterator<Item = &'a Path>) -> Result<(), String> {
     if dir.parent().is_none() || dir.parent().is_some_and(|p| p.as_os_str().is_empty()) {
-        return Err("Không dùng gốc ổ đĩa. Chọn hoặc tạo một thư mục con".into());
+        return Err(tr("Không dùng gốc ổ đĩa. Chọn hoặc tạo một thư mục con", "A drive root cannot be used. Choose or create a subfolder"));
     }
     if in_sync_folder(dir, &sync_roots()) {
-        return Err(ONEDRIVE_ERR.into());
+        return Err(onedrive_err());
     }
     if overlaps(dir, obs_root) {
-        return Err("Không đặt instance trong (hoặc chứa) thư mục cài OBS".into());
+        return Err(tr("Không đặt instance trong (hoặc chứa) thư mục cài OBS", "An instance cannot be inside (or contain) the OBS install folder"));
     }
     for other in others {
         if overlaps(dir, other) {
-            return Err("Thư mục này trùng hoặc lồng với thư mục của instance khác".into());
+            return Err(tr("Thư mục này trùng hoặc lồng với thư mục của instance khác", "This folder is the same as, or nested with, another instance's folder"));
         }
     }
     Ok(())
@@ -135,15 +153,15 @@ pub fn rollback(dir: &Path, existed: bool) {
 /// Returns whether the folder already existed.
 pub fn prepare_dir(dir: &Path) -> Result<bool, String> {
     if !dir.is_absolute() {
-        return Err("Chọn một thư mục đầy đủ đường dẫn".into());
+        return Err(tr("Chọn một thư mục đầy đủ đường dẫn", "Choose a folder with a full path"));
     }
     if dir.join(MARKER).exists() {
-        return Err("Thư mục này đã thuộc một instance khác".into());
+        return Err(tr("Thư mục này đã thuộc một instance khác", "This folder already belongs to another instance"));
     }
     if dir.exists() {
         let mut entries = fs::read_dir(dir).map_err(err)?;
         if entries.next().is_some() {
-            return Err("Thư mục phải trống. Chọn hoặc tạo một thư mục mới".into());
+            return Err(tr("Thư mục phải trống. Chọn hoặc tạo một thư mục mới", "The folder must be empty. Choose or create a new folder"));
         }
         Ok(true)
     } else {
@@ -211,10 +229,10 @@ pub fn link_obs(dir: &Path, root: &Path) -> Result<(), String> {
             .output()
             .map_err(err)?;
         if !status.status.success() {
-            return Err(format!(
-                "Không tạo được liên kết tới {}: {}",
-                entry.path().display(),
-                String::from_utf8_lossy(&status.stderr).trim()
+            let (target, why) = (entry.path().display().to_string(), String::from_utf8_lossy(&status.stderr).trim().to_string());
+            return Err(tr(
+                &format!("Không tạo được liên kết tới {target}: {why}"),
+                &format!("Could not create a link to {target}: {why}"),
             ));
         }
     }
@@ -247,7 +265,10 @@ fn remove_link(path: &Path) -> Result<(), String> {
                 .creation_flags(CREATE_NO_WINDOW)
                 .status()
                 .map_err(err)?;
-            fs::remove_dir(path).map_err(|e| format!("Không gỡ được liên kết {}: {e}", path.display()))
+            fs::remove_dir(path).map_err(|e| {
+                let p = path.display();
+                tr(&format!("Không gỡ được liên kết {p}: {e}"), &format!("Could not remove the link {p}: {e}"))
+            })
         }
         other => other.map_err(err),
     }
@@ -274,7 +295,10 @@ pub fn in_sync_folder(dir: &Path, roots: &[PathBuf]) -> bool {
 pub fn delete_dir(dir: &Path, id: &str) -> Result<(), String> {
     let marker = fs::read_to_string(dir.join(MARKER)).unwrap_or_default();
     if marker.trim() != id {
-        return Err("Thư mục không mang dấu của instance này nên không xoá. Bỏ chọn \"Xoá cả thư mục\" để chỉ gỡ khỏi danh sách".into());
+        return Err(tr(
+            "Thư mục không mang dấu của instance này nên không xoá. Bỏ chọn \"Xoá cả thư mục dữ liệu\" để chỉ gỡ khỏi danh sách",
+            "The folder is not marked as this instance's, so it was not deleted. Untick \"Also delete the data folder\" to only remove it from the list",
+        ));
     }
     unlink_obs(dir)?;
     fs::remove_dir_all(dir).map_err(err)
@@ -282,12 +306,12 @@ pub fn delete_dir(dir: &Path, id: &str) -> Result<(), String> {
 
 pub fn launch(dir: &Path) -> Result<u32, String> {
     let exe = obs_exe(dir);
-    let cwd = exe.parent().ok_or("Đường dẫn OBS không hợp lệ")?;
+    let cwd = exe.parent().ok_or_else(|| tr("Đường dẫn OBS không hợp lệ", "Invalid OBS path"))?;
     let child = Command::new(&exe)
         .args(["--multi", "--portable"])
         .current_dir(cwd)
         .spawn()
-        .map_err(|e| format!("Không mở được OBS: {e}"))?;
+        .map_err(|e| tr(&format!("Không mở được OBS: {e}"), &format!("Could not start OBS: {e}")))?;
     Ok(child.id())
 }
 
@@ -419,6 +443,14 @@ mod tests {
         assert!(in_sync_folder(Path::new(r"C:\Users\u\OneDrive\"), &roots));
         assert!(!in_sync_folder(Path::new(r"C:\Users\u\OneDriveX\a"), &roots));
         assert!(!in_sync_folder(Path::new(r"D:\OBS\a"), &roots));
+    }
+
+    #[test]
+    fn tr_follows_language() {
+        set_en(true);
+        assert_eq!(tr("vi", "en"), "en");
+        set_en(false);
+        assert_eq!(tr("vi", "en"), "vi");
     }
 
     #[test]

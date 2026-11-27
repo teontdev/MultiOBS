@@ -12,7 +12,7 @@ Chạy nhiều OBS Studio song song trên một máy Windows, mỗi OBS một c�
 > **Không chính thức.** MultiOBS là công cụ độc lập, không liên quan và không được OBS Project bảo trợ.
 > "OBS" và "OBS Studio" là nhãn hiệu của OBS Project.
 
-**English:** MultiOBS is a Windows desktop app to create, run and manage multiple isolated OBS Studio instances side by side (one per streaming account). It was built entirely by AI (Claude via Claude Code); the human only provided requirements and decisions. Unofficial, not affiliated with the OBS Project.
+**English:** MultiOBS is a Windows desktop app to create, run and manage multiple isolated OBS Studio instances side by side (one per streaming account). The UI is available in English and Vietnamese (toggle in the top bar). It was built entirely by AI (Claude via Claude Code); the human only provided requirements and decisions. Unofficial, not affiliated with the OBS Project.
 
 ## Tính năng
 
@@ -21,6 +21,7 @@ Chạy nhiều OBS Studio song song trên một máy Windows, mỗi OBS một c�
 - **Thư mục lưu mặc định**: đặt một lần trong Cài đặt, khi thêm instance chỉ cần gõ tên.
 - **Mở / Dừng** từng OBS, xem instance nào đang chạy; nhiều OBS chạy cùng lúc (`--multi`).
 - **OBS chạy với quyền admin** (game capture bắt được game chạy admin, OBS được ưu tiên GPU).
+- **Tiếng Việt / English**: bấm nút `EN`/`VI` trên thanh trên cùng để đổi ngôn ngữ (lần đầu theo ngôn ngữ Windows).
 - **Xoá an toàn**: không bao giờ đụng tới bản cài OBS hay thư mục không do app tạo.
 - Không chép OBS: mọi instance dùng chung bản cài OBS, cập nhật OBS là tất cả cùng lên đời.
 
