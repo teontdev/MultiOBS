@@ -115,15 +115,32 @@ async fn save_settings(
     state.save(&store)
 }
 
-#[tauri::command]
-async fn create_instance(state: State<'_, AppState>, name: String, dir: PathBuf) -> Res<()> {
+/// Shared by create and duplicate: validate, make the folder, then roll back on any failure.
+/// `source_id` = instance whose `config\` is copied (spec 004). It must be stopped, checked under
+/// the same lock so it cannot be launched mid-copy (OBS rewrites its ini/scene files while running).
+fn add_instance(state: &AppState, name: &str, dir: PathBuf, source_id: Option<&str>) -> Res<()> {
+    if source_id.is_some() {
+        state.refresh();
+    }
     let mut store = state.store.lock().unwrap();
-    let name = store.validate_name(&name, None)?;
+    let copy_from = match source_id {
+        Some(id) => {
+            let src = &store.instances[store.find(id)?];
+            if state.is_running(src) {
+                return Err("Dừng OBS của instance nguồn trước khi nhân bản".into());
+            }
+            Some(src.dir.clone())
+        }
+        None => None,
+    };
+    let name = store.validate_name(name, None)?;
     let root = store.obs_root.clone().ok_or("Chưa chọn thư mục cài OBS")?;
     obs::check_location(&dir, &root, store.instances.iter().map(|i| i.dir.as_path()))?;
     let existed = obs::prepare_dir(&dir)?;
     let id = uuid::Uuid::new_v4().to_string();
-    let setup = obs::write_marker(&dir, &id).and_then(|_| obs::link_obs(&dir, &root));
+    let setup = obs::write_marker(&dir, &id)
+        .and_then(|_| copy_from.map_or(Ok(()), |src| obs::copy_config(&src, &dir)))
+        .and_then(|_| obs::link_obs(&dir, &root));
     if let Err(e) = setup {
         obs::rollback(&dir, existed);
         return Err(e);
@@ -131,6 +148,16 @@ async fn create_instance(state: State<'_, AppState>, name: String, dir: PathBuf)
     let created_at = SystemTime::now().duration_since(UNIX_EPOCH).map_err(err)?.as_secs();
     store.instances.push(Instance { id, name, dir, created_at, pid: None });
     state.save(&store)
+}
+
+#[tauri::command]
+async fn create_instance(state: State<'_, AppState>, name: String, dir: PathBuf) -> Res<()> {
+    add_instance(&state, &name, dir, None)
+}
+
+#[tauri::command]
+async fn duplicate_instance(state: State<'_, AppState>, source_id: String, name: String, dir: PathBuf) -> Res<()> {
+    add_instance(&state, &name, dir, Some(&source_id))
 }
 
 #[tauri::command]
@@ -221,6 +248,7 @@ pub fn run() {
             get_state,
             save_settings,
             create_instance,
+            duplicate_instance,
             rename_instance,
             delete_instance,
             launch_instance,

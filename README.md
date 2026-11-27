@@ -17,6 +17,7 @@ Chạy nhiều OBS Studio song song trên một máy Windows, mỗi OBS một c�
 ## Tính năng
 
 - **Tạo / đổi tên / xoá instance OBS**, mỗi instance lưu cấu hình trong thư mục do bạn chọn.
+- **Nhân bản instance**: tạo instance mới với cấu hình (profile, scene, cài đặt) chép từ instance có sẵn.
 - **Thư mục lưu mặc định**: đặt một lần trong Cài đặt, khi thêm instance chỉ cần gõ tên.
 - **Mở / Dừng** từng OBS, xem instance nào đang chạy; nhiều OBS chạy cùng lúc (`--multi`).
 - **OBS chạy với quyền admin** (game capture bắt được game chạy admin, OBS được ưu tiên GPU).
@@ -45,6 +46,7 @@ Windows SmartScreen có thể cảnh báo vì bộ cài chưa được ký số.
 - **Mở / Dừng**: chạy hoặc đóng OBS của instance. "Dừng" gửi lệnh đóng bình thường (không ép tắt), nên:
   - nếu OBS đang mở hộp thoại (ví dụ trình hướng dẫn lần đầu), đóng hộp thoại đó trước;
   - nếu đang stream/ghi hình, OBS sẽ hỏi xác nhận thoát.
+- **⋯ → Nhân bản**: nhập tên mới, thư mục lưu tự đặt theo tên mới (hoặc chọn tay). App chép thư mục `config` của instance nguồn (bỏ log, crash), nên OBS mới có sẵn profile, scene, cài đặt. Instance nguồn phải đang dừng. **Stream key cũng được chép**, nhớ đổi key trong OBS mới để không phát trùng kênh.
 - **⋯ → Đổi tên / Mở thư mục / Xoá**.
 - **Xoá** (chỉ bấm được khi OBS của instance đã dừng):
   - Mặc định chỉ gỡ khỏi danh sách, thư mục dữ liệu giữ nguyên. Thư mục giữ lại không thêm lại được làm instance mới; muốn dùng lại cấu hình cũ, chép thư mục `config` sang instance mới khi OBS của nó đang dừng.

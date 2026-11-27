@@ -1,6 +1,6 @@
 import { open as openPicker } from "@tauri-apps/plugin-dialog";
 import { Trash2 } from "lucide-react";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { api, errorText, type Instance } from "../api";
 import { Button, Field, Modal, TextInput, cn, inputClasses } from "./ui";
 
@@ -84,7 +84,24 @@ export function folderName(name: string) {
     .replace(/^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$/i, "_$&"); // tên thiết bị Windows
 }
 
-export function CreateDialog({ open, defaultDir, onClose, onDone }: { open: boolean; defaultDir: string | null; onClose: () => void; onDone: Done }) {
+/** Thêm instance mới; có `source` thì là nhân bản (spec 004): tên để trống, chép config của nguồn. */
+export function CreateDialog({
+  open,
+  source: sourceProp,
+  defaultDir,
+  onClose,
+  onDone,
+}: {
+  open: boolean;
+  source?: Instance | null;
+  defaultDir: string | null;
+  onClose: () => void;
+  onDone: Done;
+}) {
+  // Giữ nguồn cuối khi đang đóng để tiêu đề không nháy về "Thêm instance" lúc chạy hiệu ứng ra.
+  const last = useRef(sourceProp);
+  if (sourceProp) last.current = sourceProp;
+  const source = sourceProp === undefined ? null : last.current;
   const [name, setName] = useState("");
   // Thư mục chọn tay; null = tự điền <thư mục mặc định>\<tên>.
   const [picked, setPicked] = useState<string | null>(null);
@@ -99,27 +116,41 @@ export function CreateDialog({ open, defaultDir, onClose, onDone }: { open: bool
   const dir = picked ?? auto;
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    run(() => api.createInstance(name, dir), () => onDone(`Đã tạo instance "${name.trim()}"`));
+    const fn = source ? () => api.duplicateInstance(source.id, name, dir) : () => api.createInstance(name, dir);
+    run(fn, () => onDone(`Đã tạo instance "${name.trim()}"`));
   };
   return (
     <Modal
       open={open}
       onClose={onClose}
       busy={busy}
-      title="Thêm instance"
-      description="Mỗi instance là một OBS riêng, có profile, scene và stream key riêng."
+      title={source ? "Nhân bản instance" : "Thêm instance"}
+      description={
+        source ? (
+          <>
+            Instance mới chép toàn bộ cấu hình (profile, scene, cài đặt) từ <span className="font-medium text-foreground">{source.name}</span>.
+          </>
+        ) : (
+          "Mỗi instance là một OBS riêng, có profile, scene và stream key riêng."
+        )
+      }
       footer={
         <>
           <Button variant="secondary" onClick={onClose} disabled={busy} className="min-h-11 md:min-h-10">
             Huỷ
           </Button>
           <Button variant="primary" type="submit" form="create-form" isLoading={busy} disabled={!name.trim() || !dir} className="min-h-11 md:min-h-10">
-            Tạo instance
+            {source ? "Nhân bản" : "Tạo instance"}
           </Button>
         </>
       }
     >
       <form id="create-form" onSubmit={submit} className="space-y-4">
+        {source ? (
+          <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-pretty text-amber-700">
+            Stream key cũng được chép. Đổi stream key trong OBS mới, nếu không hai OBS sẽ phát vào cùng một kênh.
+          </p>
+        ) : null}
         <Field label="Tên">{(id) => <TextInput id={id} autoFocus value={name} onChange={(e) => setName(e.target.value)} maxLength={60} />}</Field>
         <Field
           label="Thư mục lưu"

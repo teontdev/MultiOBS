@@ -121,7 +121,7 @@ pub fn rollback(dir: &Path, existed: bool) {
     let _ = unlink_obs(dir);
     if existed {
         let _ = fs::remove_file(dir.join(MARKER));
-        let _ = fs::remove_dir(dir.join("config"));
+        let _ = fs::remove_dir_all(dir.join("config")); // folder was empty before, so config is all ours
     } else {
         let _ = fs::remove_dir_all(dir);
     }
@@ -151,6 +151,39 @@ pub fn prepare_dir(dir: &Path) -> Result<bool, String> {
 pub fn write_marker(dir: &Path, id: &str) -> Result<(), String> {
     fs::create_dir_all(dir.join("config")).map_err(err)?;
     fs::write(dir.join(MARKER), id).map_err(err)
+}
+
+/// Copy `src\config` into `dst\config` for duplicating (spec 004). Skips links (never follow a
+/// junction out of the instance) and the source run's junk folders directly under
+/// `config\obs-studio` (only there: a profile named "Logs" deeper down must still be copied).
+pub fn copy_config(src: &Path, dst: &Path) -> Result<(), String> {
+    const SKIP: [&str; 5] = ["logs", "crashes", "profiler_data", "updates", ".sentinel"];
+    let root = src.join("config");
+    let is_junk = |p: &Path| {
+        let rel: Vec<String> = p.strip_prefix(&root).map(|r| r.iter().map(|c| c.to_string_lossy().to_lowercase()).collect()).unwrap_or_default();
+        rel.len() == 2 && rel[0] == "obs-studio" && SKIP.contains(&rel[1].as_str())
+    };
+    fn walk(from: &Path, to: &Path, is_junk: &dyn Fn(&Path) -> bool) -> Result<(), String> {
+        fs::create_dir_all(to).map_err(err)?;
+        for entry in fs::read_dir(from).map_err(err)? {
+            let path = entry.map_err(err)?.path();
+            let kind = fs::symlink_metadata(&path).map_err(err)?.file_type();
+            let target = to.join(path.file_name().ok_or("bad name")?);
+            if kind.is_symlink() || (kind.is_dir() && is_junk(&path)) {
+                continue;
+            } else if kind.is_dir() {
+                walk(&path, &target, is_junk)?;
+            } else {
+                fs::copy(&path, &target).map_err(err)?;
+            }
+        }
+        Ok(())
+    }
+    // Missing (source OBS never ran) or itself a link: duplicate is just an empty instance.
+    if !fs::symlink_metadata(&root).is_ok_and(|m| m.is_dir()) {
+        return Ok(());
+    }
+    walk(&root, &dst.join("config"), &is_junk)
 }
 
 /// Create missing junctions for every top-level folder of the OBS install. Idempotent, so it
@@ -285,6 +318,38 @@ mod tests {
         delete_dir(&inst, "id1").unwrap();
         assert!(!inst.exists());
         assert!(obs_exe(&root).is_file(), "OBS install must survive delete");
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn copy_config_skips_junk_and_links() {
+        let root = temp("croot");
+        fs::create_dir_all(root.join("data")).unwrap();
+        fs::write(root.join("data").join("big.bin"), "obs").unwrap();
+        let a = temp("ca");
+        let cfg = a.join("config").join("obs-studio");
+        fs::create_dir_all(cfg.join("basic").join("scenes")).unwrap();
+        fs::create_dir_all(cfg.join("Logs")).unwrap();
+        fs::write(cfg.join("global.ini"), "g").unwrap();
+        fs::write(cfg.join("basic").join("scenes").join("s.json"), "{}").unwrap();
+        fs::write(cfg.join("Logs").join("l.txt"), "l").unwrap();
+        let deep = cfg.join("basic").join("profiles").join("Logs");
+        fs::create_dir_all(&deep).unwrap();
+        fs::write(deep.join("basic.ini"), "p").unwrap();
+        link_obs(&a.join("config"), &root).unwrap(); // a junction inside config must not be followed
+        let b = temp("cb");
+        copy_config(&a, &b).unwrap();
+        let out = b.join("config").join("obs-studio");
+        assert_eq!(fs::read_to_string(out.join("global.ini")).unwrap(), "g");
+        assert!(out.join("basic").join("scenes").join("s.json").is_file());
+        assert!(!out.join("Logs").exists());
+        assert!(out.join("basic").join("profiles").join("Logs").join("basic.ini").is_file(), "profile named Logs must be kept");
+        assert!(!b.join("config").join("data").exists());
+        assert!(copy_config(&temp("empty"), &temp("cc")).is_ok());
+        for d in [&a, &b] {
+            unlink_obs(&d.join("config")).unwrap();
+            let _ = fs::remove_dir_all(d);
+        }
         let _ = fs::remove_dir_all(&root);
     }
 

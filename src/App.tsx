@@ -1,4 +1,4 @@
-import { FolderOpen, MonitorPlay, MoreHorizontal, Pencil, Play, Plus, Settings, Square, Trash2, TriangleAlert } from "lucide-react";
+import { Copy, FolderOpen, MonitorPlay, MoreHorizontal, Pencil, Play, Plus, Settings, Square, Trash2, TriangleAlert } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import logo from "../src-tauri/icons/logo.svg";
 import { api, errorText, type AppState, type Instance } from "./api";
@@ -13,6 +13,7 @@ export default function App() {
   const [busyIds, setBusyIds] = useState<ReadonlySet<string>>(new Set());
   const [creating, setCreating] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [duplicating, setDuplicating] = useState<Instance | null>(null);
   const [renaming, setRenaming] = useState<Instance | null>(null);
   const [deleting, setDeleting] = useState<Instance | null>(null);
   const { toasts, push, dismiss } = useToasts();
@@ -41,6 +42,7 @@ export default function App() {
 
   const done = (message: string) => {
     setCreating(false);
+    setDuplicating(null);
     setSettingsOpen(false);
     setRenaming(null);
     setDeleting(null);
@@ -111,6 +113,7 @@ export default function App() {
                   onLaunch={() => act(inst, () => api.launchInstance(inst.id), `Không mở được "${inst.name}"`)}
                   onStop={() => act(inst, () => api.stopInstance(inst.id), `Không dừng được "${inst.name}"`, "Đã gửi lệnh đóng. Nếu OBS đang mở hộp thoại, đóng hộp thoại đó trước")}
                   onRename={() => setRenaming(inst)}
+                  onDuplicate={() => setDuplicating(inst)}
                   onOpenDir={() => api.openDir(inst.id).catch((e) => push({ kind: "error", title: "Không mở được thư mục", detail: errorText(e) }))}
                   onDelete={() => setDeleting(inst)}
                 />
@@ -121,6 +124,13 @@ export default function App() {
       </main>
 
       <CreateDialog open={creating} defaultDir={state?.default_dir ?? null} onClose={() => setCreating(false)} onDone={done} />
+      <CreateDialog
+        open={!!duplicating}
+        source={duplicating}
+        defaultDir={state?.default_dir ?? null}
+        onClose={() => setDuplicating(null)}
+        onDone={done}
+      />
       <RenameDialog instance={renaming} onClose={() => setRenaming(null)} onDone={done} />
       <SettingsDialog
         open={settingsOpen}
@@ -140,6 +150,7 @@ function InstanceRow(props: {
   onLaunch: () => void;
   onStop: () => void;
   onRename: () => void;
+  onDuplicate: () => void;
   onOpenDir: () => void;
   onDelete: () => void;
 }) {
@@ -175,6 +186,7 @@ function InstanceRow(props: {
         label={`Thao tác cho ${inst.name}`}
         items={[
           { label: "Đổi tên", icon: Pencil, onSelect: props.onRename },
+          { label: "Nhân bản", icon: Copy, onSelect: props.onDuplicate, disabled: inst.running || !props.canLaunch, hint: inst.running ? "Dừng OBS trước khi nhân bản" : undefined },
           { label: "Mở thư mục", icon: FolderOpen, onSelect: props.onOpenDir },
           { label: "Xoá", icon: Trash2, onSelect: props.onDelete, danger: true, disabled: inst.running, hint: inst.running ? "Dừng OBS trước khi xoá" : undefined },
         ]}

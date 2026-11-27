@@ -21,6 +21,8 @@ export const api = {
   saveSettings: (obsRoot: string | null, defaultDir: string | null) =>
     invoke<void>("save_settings", { obsRoot, defaultDir }),
   createInstance: (name: string, dir: string) => invoke<void>("create_instance", { name, dir }),
+  duplicateInstance: (sourceId: string, name: string, dir: string) =>
+    invoke<void>("duplicate_instance", { sourceId, name, dir }),
   renameInstance: (id: string, name: string) => invoke<void>("rename_instance", { id, name }),
   deleteInstance: (id: string, deleteFiles: boolean) =>
     invoke<void>("delete_instance", { id, deleteFiles }),
