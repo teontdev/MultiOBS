@@ -1,0 +1,15 @@
+# AGENTS.md
+
+## Project
+
+MultiOBS: Tauri 2 (Rust) + React 19 + Tailwind v4 desktop app quản lý nhiều instance OBS (Windows).
+
+- Backend: `src-tauri/src/obs.rs` (store, junction, launch/stop, xoá an toàn), `src-tauri/src/lib.rs` (Tauri commands).
+- Frontend: `src/App.tsx`, `src/api.ts`, `src/components/`.
+- Chạy dev: `start.bat`. Build bộ cài NSIS: `build.bat`. Test backend: `cd src-tauri && cargo test`.
+- Spec/tasklist: `specs/`, `tasks/`.
+
+## Agent memory index
+
+- `DEC-001` | accepted | obs, instance, portable, junction, delete | Cô lập OBS bằng `--portable` qua junction; APPDATA env không có tác dụng; chỉ xoá thư mục có marker đúng id, unlink trước | [details](docs/agent-memory/decisions/DEC-001-obs-isolation-portable-junction.md)
+- `BUG-001` | resolved | obs, stop, taskkill, modal | Dừng OBS bằng WM_CLOSE (không `/F`); modal OBS chặn đóng nên UI phải báo cho người dùng | [details](docs/agent-memory/bugs/BUG-001-obs-stop-blocked-by-modal.md)
