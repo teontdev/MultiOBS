@@ -28,6 +28,9 @@ pub struct Instance {
 pub struct Store {
     #[serde(default)]
     pub obs_root: Option<PathBuf>,
+    /// Parent folder pre-filled when creating an instance (spec 002).
+    #[serde(default)]
+    pub default_dir: Option<PathBuf>,
     #[serde(default)]
     pub instances: Vec<Instance>,
 }

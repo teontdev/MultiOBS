@@ -27,6 +27,7 @@ struct InstanceView {
 struct StateView {
     obs_root: Option<PathBuf>,
     obs_ok: bool,
+    default_dir: Option<PathBuf>,
     instances: Vec<InstanceView>,
 }
 
@@ -79,16 +80,38 @@ async fn get_state(state: State<'_, AppState>) -> Res<StateView> {
         state.save(&store)?;
     }
     let obs_ok = store.obs_root.as_deref().is_some_and(|r| obs::obs_exe(r).is_file());
-    Ok(StateView { obs_root: store.obs_root.clone(), obs_ok, instances })
+    Ok(StateView {
+        obs_root: store.obs_root.clone(),
+        obs_ok,
+        // A default dir that vanished (deleted, drive unplugged) reads as unset, so the UI never
+        // auto-fills under it and saving Settings is not blocked by the stale value.
+        default_dir: store.default_dir.clone().filter(|d| d.is_dir()),
+        instances,
+    })
 }
 
+/// `default_dir: None` clears the default; `obs_root: None` keeps the current one.
 #[tauri::command]
-async fn set_obs_root(state: State<'_, AppState>, path: PathBuf) -> Res<()> {
-    if !obs::obs_exe(&path).is_file() {
-        return Err("Không thấy bin\\64bit\\obs64.exe trong thư mục này".into());
+async fn save_settings(
+    state: State<'_, AppState>,
+    obs_root: Option<PathBuf>,
+    default_dir: Option<PathBuf>,
+) -> Res<()> {
+    if let Some(root) = &obs_root {
+        if !obs::obs_exe(root).is_file() {
+            return Err("Không thấy bin\\64bit\\obs64.exe trong thư mục cài OBS đã chọn".into());
+        }
+    }
+    if let Some(dir) = &default_dir {
+        if !dir.is_absolute() || !dir.is_dir() {
+            return Err("Thư mục lưu mặc định không tồn tại".into());
+        }
     }
     let mut store = state.store.lock().unwrap();
-    store.obs_root = Some(path);
+    if obs_root.is_some() {
+        store.obs_root = obs_root;
+    }
+    store.default_dir = default_dir;
     state.save(&store)
 }
 
@@ -196,7 +219,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             get_state,
-            set_obs_root,
+            save_settings,
             create_instance,
             rename_instance,
             delete_instance,

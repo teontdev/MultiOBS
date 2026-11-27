@@ -11,12 +11,15 @@ export type Instance = {
 export type AppState = {
   obs_root: string | null;
   obs_ok: boolean;
+  default_dir: string | null;
   instances: Instance[];
 };
 
 export const api = {
   getState: () => invoke<AppState>("get_state"),
-  setObsRoot: (path: string) => invoke<void>("set_obs_root", { path }),
+  /** obsRoot null = giữ nguyên; defaultDir null = bỏ thư mục mặc định. */
+  saveSettings: (obsRoot: string | null, defaultDir: string | null) =>
+    invoke<void>("save_settings", { obsRoot, defaultDir }),
   createInstance: (name: string, dir: string) => invoke<void>("create_instance", { name, dir }),
   renameInstance: (id: string, name: string) => invoke<void>("rename_instance", { id, name }),
   deleteInstance: (id: string, deleteFiles: boolean) =>

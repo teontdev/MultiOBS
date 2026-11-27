@@ -77,16 +77,26 @@ function useFormState(open: boolean) {
 
 type Done = (message: string) => void;
 
-export function CreateDialog({ open, onClose, onDone }: { open: boolean; onClose: () => void; onDone: Done }) {
+/** Tên instance thành tên thư mục Windows hợp lệ: thay ký tự cấm, bỏ dấu chấm/khoảng trắng cuối. */
+export function folderName(name: string) {
+  // eslint-disable-next-line no-control-regex
+  return name.trim().replace(/[<>:"/\\|?*\x00-\x1f]/g, "-").replace(/[. ]+$/, "")
+    .replace(/^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$/i, "_$&"); // tên thiết bị Windows
+}
+
+export function CreateDialog({ open, defaultDir, onClose, onDone }: { open: boolean; defaultDir: string | null; onClose: () => void; onDone: Done }) {
   const [name, setName] = useState("");
-  const [dir, setDir] = useState("");
+  // Thư mục chọn tay; null = tự điền <thư mục mặc định>\<tên>.
+  const [picked, setPicked] = useState<string | null>(null);
   const { error, busy, run } = useFormState(open);
   useEffect(() => {
     if (open) {
       setName("");
-      setDir("");
+      setPicked(null);
     }
   }, [open]);
+  const auto = defaultDir && folderName(name) ? `${defaultDir.replace(/\\+$/, "")}\\${folderName(name)}` : "";
+  const dir = picked ?? auto;
   const submit = (e: FormEvent) => {
     e.preventDefault();
     run(() => api.createInstance(name, dir), () => onDone(`Đã tạo instance "${name.trim()}"`));
@@ -111,8 +121,23 @@ export function CreateDialog({ open, onClose, onDone }: { open: boolean; onClose
     >
       <form id="create-form" onSubmit={submit} className="space-y-4">
         <Field label="Tên">{(id) => <TextInput id={id} autoFocus value={name} onChange={(e) => setName(e.target.value)} maxLength={60} />}</Field>
-        <Field label="Thư mục lưu" hint="OBS sẽ lưu toàn bộ cấu hình của instance trong thư mục này. Thư mục phải trống.">
-          {(id) => <FolderInput id={id} value={dir} onPick={setDir} title="Chọn thư mục lưu dữ liệu instance" />}
+        <Field
+          label="Thư mục lưu"
+          hint={
+            defaultDir && picked === null ? (
+              auto ? (
+                <>
+                  Sẽ tạo: <span className="font-mono break-all">{auto}</span>
+                </>
+              ) : (
+                "Nhập tên để tự đặt thư mục trong thư mục mặc định."
+              )
+            ) : (
+              "OBS sẽ lưu toàn bộ cấu hình của instance trong thư mục này. Thư mục phải trống."
+            )
+          }
+        >
+          {(id) => <FolderInput id={id} value={dir} onPick={setPicked} title="Chọn thư mục lưu dữ liệu instance" />}
         </Field>
         <ErrorLine text={error} />
       </form>
@@ -163,12 +188,31 @@ export function RenameDialog({ instance, onClose, onDone }: { instance: Instance
   );
 }
 
-export function SettingsDialog({ open, current, onClose, onDone }: { open: boolean; current: string | null; onClose: () => void; onDone: Done }) {
+export function SettingsDialog({
+  open,
+  current,
+  currentDefaultDir,
+  onClose,
+  onDone,
+}: {
+  open: boolean;
+  current: string | null;
+  currentDefaultDir: string | null;
+  onClose: () => void;
+  onDone: Done;
+}) {
   const [root, setRoot] = useState("");
+  const [defDir, setDefDir] = useState("");
   const { error, busy, run } = useFormState(open);
   useEffect(() => {
-    if (open) setRoot(current ?? "");
-  }, [open, current]);
+    if (open) {
+      setRoot(current ?? "");
+      setDefDir(currentDefaultDir ?? "");
+    }
+  }, [open, current, currentDefaultDir]);
+  const unchanged = root === (current ?? "") && defDir === (currentDefaultDir ?? "");
+  const save = () =>
+    run(() => api.saveSettings(root && root !== current ? root : null, defDir || null), () => onDone("Đã lưu cài đặt"));
   return (
     <Modal
       open={open}
@@ -180,13 +224,7 @@ export function SettingsDialog({ open, current, onClose, onDone }: { open: boole
           <Button variant="secondary" onClick={onClose} disabled={busy} className="min-h-11 md:min-h-10">
             Huỷ
           </Button>
-          <Button
-            variant="primary"
-            isLoading={busy}
-            disabled={!root || root === current}
-            onClick={() => run(() => api.setObsRoot(root), () => onDone("Đã lưu thư mục cài OBS"))}
-            className="min-h-11 md:min-h-10"
-          >
+          <Button variant="primary" isLoading={busy} disabled={unchanged} onClick={save} className="min-h-11 md:min-h-10">
             Lưu
           </Button>
         </>
@@ -194,6 +232,20 @@ export function SettingsDialog({ open, current, onClose, onDone }: { open: boole
     >
       <Field label="Thư mục cài OBS" hint={<>Thư mục chứa <span className="font-mono">bin\64bit\obs64.exe</span>, thường là C:\Program Files\obs-studio.</>}>
         {(id) => <FolderInput id={id} value={root} onPick={setRoot} title="Chọn thư mục cài OBS Studio" />}
+      </Field>
+      <Field label="Thư mục lưu instance mặc định" hint="Khi thêm instance, thư mục lưu tự đặt là <thư mục này>\<tên instance>. Bỏ trống để luôn chọn tay.">
+        {(id) => (
+          <div className="flex gap-2">
+            <div className="min-w-0 flex-1">
+              <FolderInput id={id} value={defDir} onPick={setDefDir} title="Chọn thư mục lưu instance mặc định" />
+            </div>
+            {defDir ? (
+              <Button variant="ghost" onClick={() => setDefDir("")} className="min-h-11 shrink-0 md:min-h-10">
+                Bỏ
+              </Button>
+            ) : null}
+          </div>
+        )}
       </Field>
       <ErrorLine text={error} />
     </Modal>

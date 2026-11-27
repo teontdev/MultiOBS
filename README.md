@@ -11,6 +11,7 @@ App desktop Windows quản lý nhiều instance OBS Studio chạy song song. M�
 ## Sử dụng
 
 - **Thêm instance**: nhập tên và chọn thư mục lưu. Thư mục phải trống (hoặc chưa tồn tại); không dùng gốc ổ đĩa, thư mục cài OBS, hay thư mục lồng với instance khác.
+- **Thư mục lưu mặc định** (bánh răng → Cài đặt): đặt một thư mục cha, khi thêm instance ô "Thư mục lưu" tự điền `<thư mục mặc định>\<tên instance>` (ký tự Windows cấm trong tên được thay bằng `-`). Vẫn bấm "Chọn thư mục" để đặt chỗ khác.
 - **Mở / Dừng**: chạy hoặc đóng OBS của instance. "Dừng" gửi lệnh đóng bình thường, nên nếu OBS đang mở hộp thoại (ví dụ trình hướng dẫn lần đầu) thì phải đóng hộp thoại đó trước; nếu đang stream/ghi hình, OBS sẽ hỏi xác nhận thoát.
 - **⋯ → Đổi tên / Mở thư mục / Xoá**.
 - **Xoá** (chỉ bấm được khi OBS của instance đã dừng): mặc định chỉ gỡ khỏi danh sách, thư mục dữ liệu giữ nguyên. Thư mục giữ lại không thêm lại được làm instance mới (vẫn còn file `.multiobs` và `config`); muốn dùng lại cấu hình cũ, chép thư mục `config` sang instance mới khi OBS của nó đang dừng. Tick "Xoá cả thư mục dữ liệu" để xoá luôn (không khôi phục được). App chỉ xoá thư mục có file đánh dấu `.multiobs` mang đúng id của instance, và không bao giờ xoá bản cài OBS.

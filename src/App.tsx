@@ -118,9 +118,13 @@ export default function App() {
         </div>
       </main>
 
-      <CreateDialog open={creating} onClose={() => setCreating(false)} onDone={done} />
+      <CreateDialog open={creating} defaultDir={state?.default_dir ?? null} onClose={() => setCreating(false)} onDone={done} />
       <RenameDialog instance={renaming} onClose={() => setRenaming(null)} onDone={done} />
-      <SettingsDialog open={settingsOpen} current={state?.obs_root ?? null} onClose={() => setSettingsOpen(false)} onDone={done} />
+      <SettingsDialog
+        open={settingsOpen}
+        current={state?.obs_root ?? null}
+        currentDefaultDir={state?.default_dir ?? null}
+        onClose={() => setSettingsOpen(false)} onDone={done} />
       <DeleteDialog instance={deleting} onClose={() => setDeleting(null)} onDone={done} />
       <ToastRegion toasts={toasts} onDismiss={dismiss} />
     </div>
