@@ -9,7 +9,7 @@ Spec: `specs/001-multiobs-instance-manager.md`
   - Chỉ sửa: các file scaffold, `package.json`, `vite.config.ts`, `src/index.css`, `src-tauri/*`.
   - Verification: `npx tsc --noEmit` và `cargo check` (trong `src-tauri`) pass.
 
-- [ ] **T2. Lõi Rust: lưu instance, junction, mở/dừng OBS** — Depends: T1
+- [x] **T2. Lõi Rust: lưu instance, junction, mở/dừng OBS** — Depends: T1
   - Thiết kế theo mục "Lệnh Rust" và "Cơ chế tách dữ liệu" của spec. Crate: `serde`, `serde_json`, `uuid`, `sysinfo`.
   - Junction: `cmd /c mklink /J <link> <target>` (ẩn cửa sổ bằng `CREATE_NO_WINDOW`). Gỡ: `std::fs::remove_dir`.
   - Chỉ sửa: `src-tauri/src/lib.rs`, `src-tauri/src/obs.rs` (mới), `src-tauri/Cargo.toml`, `src-tauri/capabilities/default.json`.
