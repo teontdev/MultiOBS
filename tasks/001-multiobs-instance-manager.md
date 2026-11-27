@@ -20,7 +20,7 @@ Spec: `specs/001-multiobs-instance-manager.md`
   - Chỉ sửa: `src/App.tsx`, `src/api.ts` (mới), `src/components/*` (mới), `src/index.css`.
   - Verification: `npx tsc --noEmit`; `npm run tauri dev` mở được, tạo instance ở thư mục tạm, Mở → OBS chạy, config ghi vào `<dir>\config\obs-studio`, Dừng, Xoá cả thư mục.
 
-- [ ] **T4. Script, README, bộ cài** — Depends: T3
+- [x] **T4. Script, README, bộ cài** — Depends: T3
   - `start.bat` (`npm install` nếu thiếu `node_modules`, rồi `npm run tauri dev`), `build.bat` (`npm run tauri build`, in đường dẫn bộ cài), `README.md` (cách dùng, cơ chế junction, cảnh báo xoá).
   - Chỉ sửa: `start.bat`, `build.bat`, `README.md`, `.gitignore`.
   - Verification: `build.bat` sinh `src-tauri\target\release\bundle\nsis\MultiOBS_*_x64-setup.exe`.
