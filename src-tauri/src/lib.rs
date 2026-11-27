@@ -154,6 +154,8 @@ async fn launch_instance(state: State<'_, AppState>, id: String) -> Res<()> {
     if !dir.is_dir() {
         return Err(format!("Không thấy thư mục {}", dir.display()));
     }
+    // Relink from scratch: junctions may still point at an old OBS root after Settings changed it.
+    obs::unlink_obs(&dir)?;
     obs::link_obs(&dir, &root)?;
     store.instances[idx].pid = Some(obs::launch(&dir)?);
     state.save(&store)

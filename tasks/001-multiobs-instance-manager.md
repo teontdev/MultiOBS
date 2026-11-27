@@ -15,7 +15,7 @@ Spec: `specs/001-multiobs-instance-manager.md`
   - Chỉ sửa: `src-tauri/src/lib.rs`, `src-tauri/src/obs.rs` (mới), `src-tauri/Cargo.toml`, `src-tauri/capabilities/default.json`.
   - Verification: `cargo test` (test đơn vị cho kiểm tên trùng / thư mục không trống / xoá không đi xuyên junction) và `cargo check`.
 
-- [ ] **T3. UI theo skill ui-ux** — Depends: T2
+- [x] **T3. UI theo skill ui-ux** — Depends: T2
   - Dựng màn danh sách, modal tạo/đổi tên/cài đặt, hộp xác nhận xoá, toast, empty state, banner OBS — đúng mục "UI" của spec.
   - Chỉ sửa: `src/App.tsx`, `src/api.ts` (mới), `src/components/*` (mới), `src/index.css`.
   - Verification: `npx tsc --noEmit`; `npm run tauri dev` mở được, tạo instance ở thư mục tạm, Mở → OBS chạy, config ghi vào `<dir>\config\obs-studio`, Dừng, Xoá cả thư mục.
