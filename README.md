@@ -79,6 +79,8 @@ Yêu cầu: Node.js LTS (đã build với v24), Rust stable (MSVC toolchain), We
 
 Test backend: `cd src-tauri && cargo test`.
 
+Đổi version app: chỉ sửa `version` trong mục `[package]` của `src-tauri/Cargo.toml`, rồi chạy lại `build.bat`.
+
 Cấu trúc:
 
 - `src-tauri/src/obs.rs`: lưu danh sách instance, tạo/gỡ junction, mở/dừng OBS, kiểm tra thư mục và xoá an toàn.

@@ -1,6 +1,6 @@
 [package]
 name = "multiobs"
-version = "0.1.0"
+version = "0.1.1"
 description = "Quan ly nhieu instance OBS"
 authors = ["teontdev"]
 license = "PolyForm-Noncommercial-1.0.0"
