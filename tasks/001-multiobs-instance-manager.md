@@ -1,7 +1,7 @@
 # Tasklist 001 — MultiOBS
 Spec: `specs/001-multiobs-instance-manager.md`
 
-- [ ] **T1. Scaffold Tauri 2 + React + TS + Tailwind v4**
+- [x] **T1. Scaffold Tauri 2 + React + TS + Tailwind v4**
   - Tạo app bằng `create-tauri-app` (template react-ts, npm), identifier `com.multiobs.app`, productName `MultiOBS`.
   - Thêm Tailwind v4 (`@tailwindcss/vite`), `lucide-react`, `@tauri-apps/plugin-dialog` (+ crate `tauri-plugin-dialog`, quyền `dialog:default`).
   - `src/index.css`: `@import "tailwindcss";` + nguyên khối `tokens.css` của skill ui-ux (bỏ khối `.dark`).
