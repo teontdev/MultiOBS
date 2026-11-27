@@ -12,6 +12,7 @@ use std::os::windows::process::CommandExt;
 
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 const MARKER: &str = ".multiobs";
+pub const ONEDRIVE_ERR: &str = "Không đặt instance trong OneDrive: OneDrive khoá liên kết (lỗi Access is denied) và đồng bộ cấu hình OBS liên tục. Chọn thư mục ngoài OneDrive, ví dụ D:\\OBS";
 const DEFAULT_OBS_ROOT: &str = r"C:\Program Files\obs-studio";
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -104,6 +105,9 @@ fn overlaps(a: &Path, b: &Path) -> bool {
 pub fn check_location<'a>(dir: &Path, obs_root: &Path, others: impl Iterator<Item = &'a Path>) -> Result<(), String> {
     if dir.parent().is_none() || dir.parent().is_some_and(|p| p.as_os_str().is_empty()) {
         return Err("Không dùng gốc ổ đĩa. Chọn hoặc tạo một thư mục con".into());
+    }
+    if in_sync_folder(dir, &sync_roots()) {
+        return Err(ONEDRIVE_ERR.into());
     }
     if overlaps(dir, obs_root) {
         return Err("Không đặt instance trong (hoặc chứa) thư mục cài OBS".into());
@@ -225,10 +229,45 @@ pub fn unlink_obs(dir: &Path) -> Result<(), String> {
     for entry in entries {
         let path = entry.map_err(err)?.path();
         if fs::symlink_metadata(&path).map_err(err)?.file_type().is_symlink() {
-            fs::remove_dir(&path).map_err(err)?;
+            remove_link(&path)?;
         }
     }
     Ok(())
+}
+
+/// A read-only junction (OneDrive sets this, BUG-003) cannot be removed: clear the flag on the
+/// link itself (`attrib /L`, never the OBS folder it points to) and retry once.
+fn remove_link(path: &Path) -> Result<(), String> {
+    match fs::remove_dir(path) {
+        Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
+            Command::new("attrib")
+                .arg("-R")
+                .arg(path)
+                .arg("/L")
+                .creation_flags(CREATE_NO_WINDOW)
+                .status()
+                .map_err(err)?;
+            fs::remove_dir(path).map_err(|e| format!("Không gỡ được liên kết {}: {e}", path.display()))
+        }
+        other => other.map_err(err),
+    }
+}
+
+/// Cloud-sync roots from the env (OneDrive personal/business). Instances there break (BUG-003).
+pub fn sync_roots() -> Vec<PathBuf> {
+    ["OneDrive", "OneDriveConsumer", "OneDriveCommercial"]
+        .iter()
+        .filter_map(std::env::var_os)
+        .map(PathBuf::from)
+        .filter(|p| p.is_absolute())
+        .collect()
+}
+
+pub fn in_sync_folder(dir: &Path, roots: &[PathBuf]) -> bool {
+    roots.iter().any(|r| {
+        let (d, r) = (norm(dir), norm(r));
+        d == r || d.starts_with(&format!("{r}\\"))
+    })
 }
 
 /// Junctions first, then the folder — only if its marker carries this instance's id.
@@ -351,6 +390,35 @@ mod tests {
             let _ = fs::remove_dir_all(d);
         }
         let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn read_only_junction_is_unlinked() {
+        let target = temp("rotarget");
+        fs::create_dir_all(&target).unwrap();
+        let inst = temp("roinst");
+        fs::create_dir_all(&inst).unwrap();
+        let link = inst.join("bin");
+        Command::new("cmd").args(["/C", "mklink", "/J"]).arg(&link).arg(&target).output().unwrap();
+        Command::new("attrib").arg("+R").arg(&link).arg("/L").status().unwrap();
+        Command::new("attrib").arg("+R").arg(&target).status().unwrap();
+        assert!(fs::remove_dir(&link).is_err(), "precondition: read-only junction blocks remove_dir");
+        unlink_obs(&inst).unwrap();
+        assert!(fs::symlink_metadata(&link).is_err());
+        assert!(target.is_dir(), "target must survive");
+        assert!(fs::metadata(&target).unwrap().permissions().readonly(), "attrib must act on the link only (/L)");
+        Command::new("attrib").arg("-R").arg(&target).status().unwrap();
+        let _ = fs::remove_dir_all(&inst);
+        let _ = fs::remove_dir_all(&target);
+    }
+
+    #[test]
+    fn onedrive_is_detected() {
+        let roots = [PathBuf::from(r"C:\Users\u\OneDrive")];
+        assert!(in_sync_folder(Path::new(r"c:\users\u\onedrive\OBS\a"), &roots));
+        assert!(in_sync_folder(Path::new(r"C:\Users\u\OneDrive\"), &roots));
+        assert!(!in_sync_folder(Path::new(r"C:\Users\u\OneDriveX\a"), &roots));
+        assert!(!in_sync_folder(Path::new(r"D:\OBS\a"), &roots));
     }
 
     #[test]

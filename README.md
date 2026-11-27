@@ -41,7 +41,7 @@ Windows SmartScreen có thể cảnh báo vì bộ cài chưa được ký số.
 
 ## Sử dụng
 
-- **Thêm instance**: nhập tên và chọn thư mục lưu. Thư mục phải trống (hoặc chưa tồn tại); không dùng gốc ổ đĩa, thư mục cài OBS, hay thư mục lồng với instance khác.
+- **Thêm instance**: nhập tên và chọn thư mục lưu. Thư mục phải trống (hoặc chưa tồn tại); không dùng gốc ổ đĩa, thư mục cài OBS, thư mục lồng với instance khác, hay thư mục trong **OneDrive** (OneDrive khoá liên kết của app và đồng bộ cấu hình OBS liên tục).
 - **Thư mục lưu mặc định** (bánh răng → Cài đặt): đặt một thư mục cha; khi thêm instance, ô "Thư mục lưu" tự điền `<thư mục mặc định>\<tên instance>` (ký tự Windows cấm trong tên được thay bằng `-`). Vẫn bấm "Chọn thư mục" để đặt chỗ khác.
 - **Mở / Dừng**: chạy hoặc đóng OBS của instance. "Dừng" gửi lệnh đóng bình thường (không ép tắt), nên:
   - nếu OBS đang mở hộp thoại (ví dụ trình hướng dẫn lần đầu), đóng hộp thoại đó trước;

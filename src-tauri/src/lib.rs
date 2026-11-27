@@ -106,6 +106,9 @@ async fn save_settings(
         if !dir.is_absolute() || !dir.is_dir() {
             return Err("Thư mục lưu mặc định không tồn tại".into());
         }
+        if obs::in_sync_folder(dir, &obs::sync_roots()) {
+            return Err(obs::ONEDRIVE_ERR.into());
+        }
     }
     let mut store = state.store.lock().unwrap();
     if obs_root.is_some() {
